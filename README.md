@@ -26,6 +26,8 @@ Configuration can be set by using Environment Variable:
 
 ### Configuration via Environment Variable
 Set `KubeMQServerAddress` to the KubeMQ Server Address
+To use TLS you need to make sure ENV:KubeMQCertificateFile is filled with the correct path to the certificate file,
+If you are not using Secured connection please do not fill this env var
 
 
 ### Configuration via code
