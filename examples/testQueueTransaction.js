@@ -3,6 +3,7 @@ const msgQueue = require('../queue/message');
 
 let channelName = "transaction-queue";
 let kubemqAdd = "localhost:50000";
+let message_queue   =     new MessageQueue('localhost:50000','testQueue','client');
 let message_queue = new MessageQueue(kubemqAdd, channelName, "my-transaction");
 
 message_queue.ackAllQueueMessages().then( _ =>{

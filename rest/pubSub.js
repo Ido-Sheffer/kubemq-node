@@ -4,13 +4,13 @@ class PubSub {
     constructor(kubeMQHost, kubeMQRestPort, client, channelName, kubeMQToken, useStorage, group, isSecure) {
 
         this.kubeMQHost = kubeMQHost;
-        this.kubeMQPort = kubeMQRestPort;
+        this.kubeMQPort =  isNaN(kubeMQRestPort)? kubeMQPort.toString() : kubeMQRestPort ;
         this.channelName = channelName;
         this.client = client;
         this.store = useStorage;
         this.kubeMQToken = kubeMQToken;
-        this.isSecure = isSecure;  
-        this.group= group;
+        this.isSecure = isSecure;
+        this.group = group;
     }
 
     send(event) {
@@ -45,8 +45,6 @@ class PubSub {
 
     subscribe(subscriberToEvents, storeProperties) {
 
-
-
         const options = {
 
             headers: {
@@ -55,13 +53,13 @@ class PubSub {
         };
 
         var url = 'ws://';
-        url = url.concat(this.kubeMQHost.concat(':',  this.kubeMQPort));        
-        url =url.concat('/subscribe/events');
+        url = url.concat(this.kubeMQHost.concat(':', this.kubeMQPort));
+        url = url.concat('/subscribe/events');
         url = url.concat('?client_id=' + this.client);
         url = url.concat('&channel=' + this.channelName);
 
-        if(this.group !== undefined){
-        url = url.concat('&group=' + Group);
+        if (this.group !== undefined) {
+            url = url.concat('&group=' + Group);
         }
 
         if (!this.store) {
@@ -87,3 +85,15 @@ class PubSub {
 }
 
 module.exports = PubSub;
+
+module.exports.StoreProperties =class {
+    EventStoreType  = {
+        StartNewOnly: 1,
+        StartFromFirst: 2,
+        StartFromLast: 3,
+        StartAtSequence: 4,
+        StartAtTime: 5,
+        StartAtTimeDelta: 6
+    };
+    EventStoreValue= undefined;
+};

@@ -4,16 +4,16 @@ var options ;
 var httpExec = require('./httpExecuter');
 
 class Queue {
-    constructor(kubeMQHost, kubeMQRestPort, client, queueName, kubeMQToken,group,max_number_of_messages=32,wait_time_seconds_queue_messages=1, isSecure) {
+    constructor(kubeMQHost, kubeMQRestPort, client, queueName, kubeMQToken,group, maxReceive=32, waitTime=1, isSecure) {
         this.kubeMQHost    =  kubeMQHost;
-        this.kubeMQPort    =  kubeMQRestPort;
+        this.kubeMQPort    =  isNaN(kubeMQRestPort)? kubeMQPort.toString() : kubeMQRestPort ;
         this.queueName     =  queueName;
         this.client        =  client;
         this.kubeMQToken = kubeMQToken;
         this.isSecure = isSecure;
         this.group = group;
-        this.max_number_of_messages             =   max_number_of_messages;
-        this.wait_time_seconds_queue_messages   =   wait_time_seconds_queue_messages;
+        this.max_number_of_messages             =   maxReceive;
+        this.wait_time_seconds_queue_messages   =   waitTime;
 
         options = {
             'host': this.kubeMQHost,
@@ -24,9 +24,6 @@ class Queue {
     
 
     send(message) {
-
-      
-            ///validate message
 
             message.Channel = this.queueName;
             message.ClientId = this.client;

@@ -96,7 +96,8 @@ class StoreProperties{
     }
 }
 
+module.exports = PubSub
 
-module.exports = {PubSub,Event,StoreProperties};
+module.exports = {Event,StoreProperties};
 
 module.exports.EventStoreType = Subscriber.EventStoreType;

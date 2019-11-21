@@ -3,12 +3,12 @@ var httpExec = require('./httpExecuter');
 var ws;
 var options;
 
-class RPC {
+class rpc {
 
     constructor(kubeMQHost, kubeMQRestPort, client, channelName,kubeMQToken, type, defaultTimeout, group, isSecure) {
 
         this.kubeMQHost = kubeMQHost;
-        this.kubeMQPort = kubeMQRestPort;
+        this.kubeMQPort = isNaN(kubeMQRestPort)? kubeMQPort.toString() : kubeMQRestPort ;
         this.channelName = channelName;
         this.defaultTimeout = defaultTimeout;
         this.client = client;
@@ -116,7 +116,7 @@ class RPC {
 
 }
 
-module.exports = RPC;
+module.exports = rpc;
 module.exports.Type = {
     Command: 1,
     Query: 2
