@@ -37,7 +37,7 @@ class PubSub{
         this.client_id        =  client;
         this.store         = useStore;
         this.group          =group;
-        sender                 =    new Sender(this.kubeMQHost.concat(':',  this.kubeMQport))
+        sender                 =    new Sender(this.kubeMQHost.concat(':',  this.kubeMQPort))
     }
 
 

@@ -101,9 +101,8 @@ function convertQueueMessageBatchRequest(uuid,messages) {
     return queue_message_batch_request;
 }
 
-
-module.exports={
-    Message,
+module.exports=Message;
+module.exports={   
     convertQueueMessageBatchRequest,
     convertToQueueMessage
 }
