@@ -18,5 +18,10 @@
   "bugs": {
     "url": "https://github.com/kubemq-io/kubemq-node/issues"
   },
-  "homepage": "https://github.com/kubemq-io/kubemq-node#readme"
+  "homepage": "https://github.com/kubemq-io/kubemq-node#readme",
+  "dependencies": {
+    "@grpc/proto-loader": "^0.5.3",
+    "enum": "^2.5.0",
+    "grpc": "^1.24.2"
+  }
 }
