@@ -28,6 +28,10 @@ Configuration can be set by using Environment Variable:
 Set `KubeMQServerAddress` to the KubeMQ Server Address
 
 
+To use TLS you need to make sure `KubeMQCertificateFile` is filled with the correct path to the certificate file,
+If you are not using Secured connection please do not fill this env var
+
+
 ### Configuration via code
 When setting the KubeMQ server address within the code, simply pass the address as a parameter to the various constructors.
 See exactly how in the code examples in this document.
