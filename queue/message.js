@@ -102,7 +102,7 @@ function convertQueueMessageBatchRequest(uuid,messages) {
 }
 
 module.exports=Message;
-module.exports={   
-    convertQueueMessageBatchRequest,
-    convertToQueueMessage
-}
+module.exports.convertQueueMessageBatchRequest=convertQueueMessageBatchRequest;
+module.exports.convertToQueueMessage=convertToQueueMessage;
+    
+

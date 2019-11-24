@@ -1,9 +1,7 @@
 const MessageQueue = require('../queue/message_queue');
 const msgQueue     = require('../queue/message');
 
-let channelName = "transaction-queue";
-let kubemqAdd = "localhost:50000";
-let message_queue = new MessageQueue(kubemqAdd, channelName, "my-resend");
+let message_queue = new MessageQueue('localhost:50000', 'testQueue', 'client');
 
 
 let transaction      =     message_queue.createTransaction();

@@ -20,6 +20,10 @@
   },
   "homepage": "https://github.com/kubemq-io/kubemq-node#readme",
   "dependencies": {
+    "@grpc/proto-loader": "^0.5.3",
+    "async-lock": "^1.2.2",
+    "enum": "^2.5.0",
+    "grpc": "^1.24.2",
     "tls": "0.0.1",
     "ws": "^7.2.0"
   }

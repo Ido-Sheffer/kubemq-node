@@ -172,7 +172,7 @@ class Transaction{
 				if (this.stream == true){
 					this.stream = false;
 					this.streamObserver.cancel();
-					this.streamObserver=null;
+					this.streamObserver=null;				
 					done();
 					resolve(true);
 				}else{
