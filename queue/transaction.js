@@ -52,14 +52,15 @@ class Transaction{
 	 * @param {number} wait_time_seconds    -  Wait time of request, default is from queue.
 	 * @param {req_handler} callback 
 	 */
-	receive(visibility_seconds=1, wait_time_seconds=1,req_handler=null){
+	receive(visibility_seconds=1, wait_time_seconds=1,req_handler=null,err_handler=null){
 		return new Promise((resolve, reject) =>{
 			if (this.openStream()==true){
 				reject("stream already open , please call ack")
 			}
 			let message =  this.queue.createStreamQueueMessageReceiveRequest(visibility_seconds,wait_time_seconds)
 			
-			this.streamObserver.on("data",req_handler)
+			this.streamObserver.on("data",req_handler);
+			this.streamObserver.on("error",err_handler);
 			this.streamObserver.write(message)
 			resolve();
 		})
