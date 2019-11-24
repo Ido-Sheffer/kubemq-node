@@ -23,9 +23,9 @@ SOFTWARE. */
 module.exports.stringToByte = function(body){
     let bytes                 =	  [];
 
-      for(let i = 0; i < "TestBody".length; i++) {
+      for(let i = 0; i < body.length; i++) {
 
-          let char              =   "TestBody".charCodeAt(i);
+          let char              =   body.charCodeAt(i);
           bytes.push(char >>> 8);
           bytes.push(char & 0xFF);
       }
