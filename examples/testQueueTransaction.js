@@ -30,7 +30,7 @@ function queueHandler(msg) {
   }
   else if (msg.StreamRequestTypeData === "AckMessage" || msg.StreamRequestTypeData === "RejectMessage") {
     transaction.closeStream();
-    console.log('msg acked, stream was close');
+    console.log('msg Ack, stream was close');
  
     transaction = message_queue.createTransaction();
     transaction.receive(100, 1, queueHandler)

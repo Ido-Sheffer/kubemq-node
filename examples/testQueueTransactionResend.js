@@ -6,9 +6,9 @@ let message_queue = new MessageQueue('localhost:50000', 'testQueue', 'client');
 
 let transaction      =     message_queue.createTransaction();
 
-function queueHandler(recm) {
-    console.log(`Received messages ${recm}`);
-    if (recm.StreamRequestTypeData=="ReceiveMessage")
+function queueHandler(msg) {
+    console.log(`Received messages ${msg}`);
+    if (msg.StreamRequestTypeData=="ReceiveMessage")
     {
       console.log("Received Message sending resend request.");
       transaction.resend(channelName).then(_=> {

@@ -7,13 +7,13 @@ let message_queue = new MessageQueue('localhost:50000', 'testQueue', 'client');
 
   let transaction      =     message_queue.createTransaction();
 
-  function queueHandler(recm) {
-      console.log(`Received messages ${recm.StreamRequestTypeData}`);
-      if (recm.StreamRequestTypeData=="ReceiveMessage")
+  function queueHandler(msg) {
+      console.log(`Received messages ${msg.StreamRequestTypeData}`);
+      if (msg.StreamRequestTypeData=="ReceiveMessage")
       {
         console.log("Need more time to process, extend visibility for more 3 seconds");
         transaction.extendVisibility(3).then(_=> {
-          console.log(`sent extendVisibiltyRequest`);
+          console.log(`sent extendVisibilityRequest`);
         });
       }
   }
