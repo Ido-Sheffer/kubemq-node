@@ -1,4 +1,4 @@
-
+const EventEmitter = require('events');
 const WebSocket = require('ws');
 let ws = undefined;
 const StreamRequestType = {
@@ -9,12 +9,14 @@ const StreamRequestType = {
     'ModifyVisibility': 4,
     'ResendMessage': 5,
     'SendModifiedMessage': 6
-
 }
-let  TranMessage = undefined;
+let TranMessage;
+let socketOpen =false;
+let socketOpening =false;
 
-class transaction {
+class transaction extends EventEmitter {
     constructor(kubeMQHost, kubeMQRestPort, client, queueName) {
+        super();
         this.kubeMQHost = kubeMQHost;
         this.kubeMQRestPort = isNaN(kubeMQRestPort) ? kubeMQPort.toString() : kubeMQRestPort;
         this.client = client;
@@ -29,32 +31,15 @@ class transaction {
             url = url.concat('&group=' + Group);
         }
         this.url = url;
-      
-        this.Receiver  = this.Receiver.bind(this);
     }
 
 
-
-
-
-    ReceiveMessage() {
-        if (this.TranMessage !== undefined) {
-            reject('already message in tran');
+    receiveMessage(visibilitySeconds, waitTimeSeconds) {
+        if (this.TranMessage !== undefined || socketOpen===true||socketOpening===true) {
+            this.emit('error',{Error:'there is still a transaction open'});
+            return;
         }
-        return this.Receiver(StreamRequestType.ReceiveMessage);
-    };
-
-    AckMessage() {
-        return new Promise((resolve, reject) => {
-            if (TranMessage === undefined) {
-               return reject('no message in tran');
-            }
-            return this.Receiver(StreamRequestType.AckMessage);
-        });
-    };
-
-
-    Receiver(streamRequestTypeData) {
+        socketOpening = true;
         var options = {
 
             headers: {
@@ -62,16 +47,153 @@ class transaction {
             }
         };
 
-        
-        ws = new WebSocket(this.url, options);
-        var StreamQueueMessageRequest = {
+        let StreamQueueMessageRequest = {
             RequestID: undefined,
             ClientID: this.client,
-            StreamRequestTypeData: streamRequestTypeData,
+            StreamRequestTypeData: StreamRequestType.ReceiveMessage,
             Channel: this.queueName,
-            VisibilitySeconds: 120,
-            WaitTimeSeconds: 1,
-            RefSequence: TranMessage !==undefined ?   TranMessage.Message.Attributes.Sequence : undefined,
+            VisibilitySeconds: visibilitySeconds,
+            WaitTimeSeconds: waitTimeSeconds,
+            RefSequence: TranMessage !== undefined ? TranMessage.Message.Attributes.Sequence : undefined,
+            ModifiedMessage: null,
+        }
+
+        var json = JSON.stringify(StreamQueueMessageRequest);
+        ws = new WebSocket(this.url, options);
+       
+        var self = this;
+        ws.on('message', function incoming(data) {
+            let msg = JSON.parse(data);
+            if (msg.IsError) {
+                TranMessage = undefined;
+                    self.emit('error', msg);
+                    return;
+            }
+            switch (msg.StreamRequestTypeData) {
+                case StreamRequestType.ReceiveMessage:
+                    TranMessage = msg;
+                    self.emit('message', msg);
+                    break;
+                case StreamRequestType.AckMessage:
+                        msg.by = 'AckMessage';
+                    self.emit('end',  msg);
+                    this.close();
+                    break;
+                case StreamRequestType.RejectMessage:
+                        msg.by = 'RejectMessage';
+                    self.emit('end', msg)
+                    this.close();
+                    break;
+               
+                case StreamRequestType.ModifyVisibility:                    
+                    self.emit('extended', msg)
+                    this.close();
+                    break;
+                case StreamRequestType.ResendMessage:
+                        msg.by = 'ResendMessage';
+                    self.emit('end', msg)
+                    this.close();
+                    break;
+                case StreamRequestType.SendModifiedMessage:
+                        msg.by = 'SendModifiedMessage';
+                    self.emit('end', msg)
+                    this.close();
+                    break;
+
+            }
+        });
+
+        ws.on('open', function open() {
+            socketOpen =true;
+            socketOpening= false;
+            ws.send(json, err => {
+                if (err !== undefined) {
+                    self.emit('error', err);
+                }              
+            });
+        });
+        ws.on('close', code => {
+            TranMessage = undefined;
+            socketOpen = false;
+            socketOpening= false;
+            self.emit('end', {by:'socket close'})
+        });
+        ws.on('error', err => {
+            self.emit('error', err);
+        });
+
+
+
+    };
+
+    ackMessage() {
+
+        if (TranMessage === undefined||socketOpen===false) {
+            this.emit('error',{Error:'no message in tran'});
+            return;
+        }
+        let StreamQueueMessageRequest = {
+            RequestID: undefined,
+            ClientID: this.client,
+            StreamRequestTypeData: StreamRequestType.AckMessage,
+            Channel: this.queueName,
+            VisibilitySeconds: undefined,
+            WaitTimeSeconds: undefined,
+            RefSequence: TranMessage !== undefined ? TranMessage.Message.Attributes.Sequence : undefined,
+            ModifiedMessage: null,
+        }
+
+
+
+        var json = JSON.stringify(StreamQueueMessageRequest);
+        var self = this;
+        ws.send(json, err => {
+            if (err !== undefined) {
+                self.emit('error', err);
+            }
+        });
+    };
+
+    rejectedMessage() {
+        if (TranMessage === undefined||socketOpen===false) {
+            this.emit('error',{Error:'no message in tran'});
+            return;
+        }
+        let StreamQueueMessageRequest = {
+            RequestID: undefined,
+            ClientID: this.client,
+            StreamRequestTypeData: StreamRequestType.RejectMessage,
+            Channel: this.queueName,
+            VisibilitySeconds: undefined,
+            WaitTimeSeconds: undefined,
+            RefSequence: TranMessage !== undefined ? TranMessage.Message.Attributes.Sequence : undefined,
+            ModifiedMessage: null,
+        }
+
+
+
+        var json = JSON.stringify(StreamQueueMessageRequest);
+        var self = this;
+        ws.send(json, err => {
+            if (err !== undefined) {
+                self.emit('error', err);
+            }
+        });
+    };
+
+    extendVisibility(visibility_seconds) {
+        if (TranMessage === undefined||socketOpen===false) {
+            this.emit('error',{Error:'no message in tran'});
+            return;
+        }
+        let StreamQueueMessageRequest = {
+            RequestID: undefined,
+            ClientID: this.client,
+            StreamRequestTypeData: StreamRequestType.ModifyVisibility,
+            Channel: this.queueName,
+            VisibilitySeconds: visibility_seconds,
+            WaitTimeSeconds: undefined,
+            RefSequence: TranMessage !== undefined ? TranMessage.Message.Attributes.Sequence : undefined,
             ModifiedMessage: null,
         }
 
@@ -79,40 +201,72 @@ class transaction {
 
         var json = JSON.stringify(StreamQueueMessageRequest);
 
-
-
-
-        return new Promise((resolve, reject) => {
-
-
-            ws.on('open', function open() {
-                console.log('open');
-                ws.send(json, error => {
-                    console.log(error);
-                })
-            });
-
-            ws.on('error', err => {
-                console.log();
-                reject(err);
-            })
-
-            ws.on('message', function incoming(data) {
-                let objectData = JSON.parse(data);
-                if(objectData.IsError)
-                {
-                    TranMessage = undefined;
-
-                   return reject(objectData.Error);
-                }
-                if (objectData.StreamRequestTypeData == StreamRequestType.ReceiveMessage) {
-                   
-                    TranMessage = objectData;
-                    return  resolve(objectData);
-                }
-            });
+        var self = this;
+        ws.send(json, err => {
+            if (err !== undefined) {
+                self.emit('error', err);
+            }
         });
+    };
 
+    resend(queueName) {
+        if (TranMessage === undefined||socketOpen===false) {
+            this.emit('error',{Error:'no message in tran'});
+            return;
+        }
+        let StreamQueueMessageRequest = {
+            RequestID: undefined,
+            ClientID: this.client,
+            StreamRequestTypeData: StreamRequestType.ModifyVisibility,
+            Channel: queueName,
+            VisibilitySeconds: undefined,
+            WaitTimeSeconds: undefined,
+            RefSequence: TranMessage !== undefined ? TranMessage.Message.Attributes.Sequence : undefined,
+            ModifiedMessage: null,
+        }
+
+
+
+        var json = JSON.stringify(StreamQueueMessageRequest);
+        var json = JSON.stringify(StreamQueueMessageRequest);
+        var self = this;
+        ws.send(json, err => {
+            if (err !== undefined) {
+                self.emit('error', err);
+            }
+        });
+    };
+
+ 
+    modify(message) {
+        if (TranMessage === undefined||socketOpen===false) {
+            this.emit('error',{Error:'no message in tran'});
+            return;
+        }
+        let StreamQueueMessageRequest = {
+            RequestID: undefined,
+            ClientID: this.client,
+            StreamRequestTypeData: StreamRequestType.ModifyVisibility,
+            Channel: this.queueName,
+            VisibilitySeconds: undefined,
+            WaitTimeSeconds: undefined,
+            RefSequence: TranMessage !== undefined ? TranMessage.Message.Attributes.Sequence : undefined,
+            ModifiedMessage: message,
+        }
+
+
+
+        var json = JSON.stringify(StreamQueueMessageRequest);
+
+        var json = JSON.stringify(StreamQueueMessageRequest);
+        var self = this;
+        ws.send(json, err => {
+            if (err !== undefined) {
+                self.emit('error', err);
+            }
+        });
     };
 };
+
+
 module.exports = transaction;
