@@ -249,8 +249,10 @@ let message_queue    =     new MessageQueue(kubemqAdd,channelName,"my-peek-queue
 
 
 
-
-	transaction.receive(100, 1, queueHandler);
+	function errorHandler(msg) {
+	  console.log(`Received error ${msg}`);
+	};
+	transaction.receive(100, 1, queueHandler,errorHandler);
 
 
 	function queueHandler(recm) {
@@ -312,9 +314,11 @@ let message_queue    =     new MessageQueue(kubemqAdd,channelName,"my-peek-queue
 		  });
 		}
 	}
+	function errorHandler(msg) {
+	  console.log(`Received error ${msg}`);
+	};
 
-
-	  transaction.receive(5, 10,queueHandler);
+	  transaction.receive(5, 10,queueHandler,errorHandler);
 		
 
 ```
@@ -340,9 +344,12 @@ function queueHandler(recm) {
       });
     }
 }
+	function errorHandler(msg) {
+	  console.log(`Received error ${msg}`);
+	};
 
 
-  transaction.receive(5, 10,queueHandler);
+  transaction.receive(5, 10,queueHandler,errorHandler);
 ```
 
 ### Transactional Queue - Resend Modified Message
@@ -365,8 +372,11 @@ function queueHandler(recm) {
     }
 }
 
+function errorHandler(msg) {
+  console.log(`Received error ${msg}`);
+};
 
-  transaction.receive(5, 10,queueHandler);
+  transaction.receive(5, 10,queueHandler,errorHandler);
 ```
 
 ## Event

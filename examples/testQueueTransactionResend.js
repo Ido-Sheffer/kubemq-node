@@ -17,5 +17,8 @@ function queueHandler(msg) {
     }
 }
 
+function errorHandler(msg) {
+  console.log(`Received error ${msg}`);
+};
 
-  transaction.receive(5, 10,queueHandler);
+  transaction.receive(5, 10,queueHandler,errorHandler);
