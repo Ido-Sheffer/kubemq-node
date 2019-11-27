@@ -86,7 +86,7 @@ class PubSub {
 
 module.exports = PubSub;
 
-module.exports.StoreProperties =class {
+module.exports.StoreProperties = class {
     EventStoreType  = {
         StartNewOnly: 1,
         StartFromFirst: 2,

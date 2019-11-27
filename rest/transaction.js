@@ -11,17 +11,26 @@ const StreamRequestType = {
     'SendModifiedMessage': 6
 }
 let TranMessage;
-let socketOpen =false;
-let socketOpening =false;
+let socketOpen = false;
+let socketOpening = false;
 
+/**
+   * @param {string} kubeMQHost - The KubeMQ address.
+    * @param {number} kubeMQRestPort - The KubeMQ Rest exposed port.
+    * @param {string} client - The publisher ID, for tracing.
+    * @param {string} queueName - The queue name.
+    * @param {string} kubeMQToken - The authentication Key from KubeMQ.io.  
+ */
 class transaction extends EventEmitter {
-    constructor(kubeMQHost, kubeMQRestPort, client, queueName) {
+    constructor(kubeMQHost, kubeMQRestPort, client, queueName, kubeMQToken, isSecure) {
         super();
         this.kubeMQHost = kubeMQHost;
         this.kubeMQRestPort = isNaN(kubeMQRestPort) ? kubeMQPort.toString() : kubeMQRestPort;
         this.client = client;
         this.queueName = queueName;
-        var url = 'ws://';
+        this.kubeMQToken
+        this.isSecure;
+        var url = isSecure ? 'wss://' : 'ws://';
         url = url.concat(this.kubeMQHost.concat(':', this.kubeMQRestPort));
         url = url.concat('/queue/stream');
         url = url.concat('?client_id=' + this.client);
@@ -35,16 +44,17 @@ class transaction extends EventEmitter {
 
 
     receiveMessage(visibilitySeconds, waitTimeSeconds) {
-        if (this.TranMessage !== undefined || socketOpen===true||socketOpening===true) {
-            this.emit('error',{Error:'there is still a transaction open'});
+        if (this.TranMessage !== undefined || socketOpen === true || socketOpening === true) {
+            this.emit('error', { Error: 'there is still a transaction open' });
             return;
         }
         socketOpening = true;
         var options = {
 
             headers: {
-                'X-Kubemq-Server-Token': '1b12c563-4f8a-49e9-94e1-aa29b7be70d6'
-            }
+                'X-Kubemq-Server-Token': this.kubeMQToken
+            },
+            rejectUnauthorized: false
         };
 
         let StreamQueueMessageRequest = {
@@ -60,14 +70,14 @@ class transaction extends EventEmitter {
 
         var json = JSON.stringify(StreamQueueMessageRequest);
         ws = new WebSocket(this.url, options);
-       
+
         var self = this;
         ws.on('message', function incoming(data) {
             let msg = JSON.parse(data);
             if (msg.IsError) {
                 TranMessage = undefined;
-                    self.emit('error', msg);
-                    return;
+                self.emit('error', msg);
+                return;
             }
             switch (msg.StreamRequestTypeData) {
                 case StreamRequestType.ReceiveMessage:
@@ -75,27 +85,27 @@ class transaction extends EventEmitter {
                     self.emit('message', msg);
                     break;
                 case StreamRequestType.AckMessage:
-                        msg.by = 'AckMessage';
-                    self.emit('end',  msg);
+                    msg.by = 'AckMessage';
+                    self.emit('end', msg);
                     this.close();
                     break;
                 case StreamRequestType.RejectMessage:
-                        msg.by = 'RejectMessage';
+                    msg.by = 'RejectMessage';
                     self.emit('end', msg)
                     this.close();
                     break;
-               
-                case StreamRequestType.ModifyVisibility:                    
+
+                case StreamRequestType.ModifyVisibility:
                     self.emit('extended', msg)
                     this.close();
                     break;
                 case StreamRequestType.ResendMessage:
-                        msg.by = 'ResendMessage';
+                    msg.by = 'ResendMessage';
                     self.emit('end', msg)
                     this.close();
                     break;
                 case StreamRequestType.SendModifiedMessage:
-                        msg.by = 'SendModifiedMessage';
+                    msg.by = 'SendModifiedMessage';
                     self.emit('end', msg)
                     this.close();
                     break;
@@ -104,19 +114,19 @@ class transaction extends EventEmitter {
         });
 
         ws.on('open', function open() {
-            socketOpen =true;
-            socketOpening= false;
+            socketOpen = true;
+            socketOpening = false;
             ws.send(json, err => {
                 if (err !== undefined) {
                     self.emit('error', err);
-                }              
+                }
             });
         });
         ws.on('close', code => {
             TranMessage = undefined;
             socketOpen = false;
-            socketOpening= false;
-            self.emit('end', {by:'socket close'})
+            socketOpening = false;
+            self.emit('end', { by: 'socket close' })
         });
         ws.on('error', err => {
             self.emit('error', err);
@@ -128,8 +138,8 @@ class transaction extends EventEmitter {
 
     ackMessage() {
 
-        if (TranMessage === undefined||socketOpen===false) {
-            this.emit('error',{Error:'no message in tran'});
+        if (TranMessage === undefined || socketOpen === false) {
+            this.emit('error', { Error: 'no message in tran' });
             return;
         }
         let StreamQueueMessageRequest = {
@@ -155,8 +165,8 @@ class transaction extends EventEmitter {
     };
 
     rejectedMessage() {
-        if (TranMessage === undefined||socketOpen===false) {
-            this.emit('error',{Error:'no message in tran'});
+        if (TranMessage === undefined || socketOpen === false) {
+            this.emit('error', { Error: 'no message in tran' });
             return;
         }
         let StreamQueueMessageRequest = {
@@ -182,8 +192,8 @@ class transaction extends EventEmitter {
     };
 
     extendVisibility(visibility_seconds) {
-        if (TranMessage === undefined||socketOpen===false) {
-            this.emit('error',{Error:'no message in tran'});
+        if (TranMessage === undefined || socketOpen === false) {
+            this.emit('error', { Error: 'no message in tran' });
             return;
         }
         let StreamQueueMessageRequest = {
@@ -210,8 +220,8 @@ class transaction extends EventEmitter {
     };
 
     resend(queueName) {
-        if (TranMessage === undefined||socketOpen===false) {
-            this.emit('error',{Error:'no message in tran'});
+        if (TranMessage === undefined || socketOpen === false) {
+            this.emit('error', { Error: 'no message in tran' });
             return;
         }
         let StreamQueueMessageRequest = {
@@ -237,10 +247,10 @@ class transaction extends EventEmitter {
         });
     };
 
- 
+
     modify(message) {
-        if (TranMessage === undefined||socketOpen===false) {
-            this.emit('error',{Error:'no message in tran'});
+        if (TranMessage === undefined || socketOpen === false) {
+            this.emit('error', { Error: 'no message in tran' });
             return;
         }
         let StreamQueueMessageRequest = {

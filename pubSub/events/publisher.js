@@ -52,7 +52,7 @@ class Publisher {
 
 }
 
-module.exports.Publisher = Publisher;
+module.exports = Publisher;
 
 /**
  * 
