@@ -20,19 +20,22 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. */
 
-module.exports.stringToByte = function(body){
-    let bytes                 =	  [];
 
-      for(let i = 0; i < body.length; i++) {
 
-          let char              =   body.charCodeAt(i);
-          bytes.push(char >>> 8);
-          bytes.push(char & 0xFF);
-      }
-      return bytes;
-}
+var publisher = require('../pubSub/events/publisher');
+var stringToByte = require('../tools/stringToByte').stringToByte;
 
-module.exports.byteToString= function(body){
-    
-    return Buffer.from(body, 'base64')
- }
+let channelName = 'testing_event_channel', clientID = 'hello-world-subscriber',
+    kubeMQHost = 'localhost', kubeMQGrpcPort = '50000';
+
+let pub = new publisher(kubeMQHost, kubeMQGrpcPort, clientID, channelName);
+
+let event = new publisher.Event(stringToByte('hello kubemq - sending single event'));
+
+pub.send(event).then(
+    res => {
+        console.log(res);
+    }).catch(
+        err => {
+            console.log('error sending' + err)
+        });
