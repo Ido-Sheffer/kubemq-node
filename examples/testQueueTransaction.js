@@ -1,74 +1,69 @@
 const MessageQueue = require('../queue/message_queue');
-const msgQueue = require('../queue/message');
+const Message = require('../queue/message');
+const byteConverter = require('../tools/stringToByte').stringToByte;
 
-let channelName = "transaction-queue";
-let kubemqAdd = "localhost:50000";
-let message_queue = new MessageQueue(kubemqAdd, channelName, "my-transaction");
-
-message_queue.ackAllQueueMessages().then( _ =>{
-    let bytes = [];
-
-    for (let i = 0; i < "myQueueTestMessage".length; i++) {
-      let char = "TestBody".charCodeAt(i);
-      bytes.push(char >>> 8);
-      bytes.push(char & 0xFF);
-    }
-
-    let transaction = message_queue.createTransaction();
-
-    let messages = [];
-    let message = new msgQueue.Message("MyFirstMessage", bytes);
-    let second_message = new msgQueue.Message("MySecondMessage", bytes);
-  
-    messages.push(message);
-    messages.push(second_message);
-  
-    message_queue.sendQueueMessageBatch(messages).then(_=>{
-      transaction.receive(100, 1, queueHandler);
+let message_queue = new MessageQueue('localhost:50000', 'testQueue', 'client');
 
 
-      function queueHandler(recm) {
-        console.log(`Received messages ${recm}`);
-        if (recm.StreamRequestTypeData == "ReceiveMessage") {
-    
-          let msgSequence = recm.Message.Attributes.Sequence;
-          workOnMSG(recm)
-            .then(_ => {
-              transaction.ackMessage(msgSequence)
-                .then(_ => {
-                  console.log("ack was called");
-                }
-                )
-            }).catch(_ => {
-              transaction.rejectedMessage(msgSequence)
-                .then(_ => {
-                  console.log('msg was rejected');
-                });
-            });
-        }
-        else if (recm.StreamRequestTypeData === "AckMessage" || recm.StreamRequestTypeData === "RejectMessage") {
-          console.log('msg acked, stream was close');
-          transaction.closeStream();
-        }
-    
+
+let transaction = message_queue.createTransaction();
+
+
+function queueHandler(msg) {
+  console.log(`Received messages ${msg.StreamRequestTypeData}`);
+  if (msg.StreamRequestTypeData == "ReceiveMessage") {
+      if (msg.IsError===false){
+        let msgSequence = msg.Message.Attributes.Sequence;
+        workOnMSG(msg)
+          .then(_ => {
+            transaction.ackMessage(msgSequence)
+              .then(_ => {
+                console.log("ack was called");
+              }
+              )
+          }).catch(_ => {
+            transaction.rejectedMessage(msgSequence)
+              .then(_ => {
+                console.log('msg was rejected');
+              });
+          });
+      }else{
+        console.log(`Received error of ${msg.Error}`);
       }
-    
-      function workOnMSG(msg) {
-        return new Promise((resolve, reject) => {
-          if (msg.Message.Attributes.Sequence !== '3') {
-            console.log('worked on msg');
-            resolve();
-          }
-          else {
-            reject();
-          }
-        })
-      };
-    });
+    }
+    else if (msg.StreamRequestTypeData === "AckMessage" || msg.StreamRequestTypeData === "RejectMessage") {
+      transaction.closeStream();
+      console.log('msg Ack, stream was close');
+  
+      transaction = message_queue.createTransaction();
+      transaction.receive(100, 1, queueHandler,errorHandler)
+    }
+};
+
+function errorHandler(msg) {
+  console.log(`Received error ${msg}`);
+};
+
+function workOnMSG(msg) {
+  return new Promise((resolve, reject) => {
+    if (msg.Message.Attributes.Sequence !== '3') {
+      console.log('worked on msg');
+      resolve();
+    }
+    else {
+      reject();
+    }
+  })
+};
+
+transaction.receive(100, 1, queueHandler,errorHandler)
 
 
 
-})
+
+
+
+
 
 
 

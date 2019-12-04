@@ -6,8 +6,8 @@ var byteConverter = require('../tools/stringToByte');
  * event pubsub
  */
 
-var subscriber = require('../pubSub/events/subscriber');
-let sub = new subscriber.Subscriber('localhost', '50000', 'sub', 'pubsub');
+var Subscriber = require('../pubSub/events/subscriber');
+let sub = new Subscriber('localhost', '50000', 'sub', 'pubsub');
 
 sub.subscribeToEvents(msg => {
     console.log('msg:' + String.fromCharCode.apply(null, msg.Body))
@@ -16,10 +16,10 @@ sub.subscribeToEvents(msg => {
 
 
 
-var publish = require('../pubSub/events/publisher');
-let pub = new publish.Publisher('localhost', '50000', 'pub', 'pubsub');
+var Publisher = require('../pubSub/events/publisher');
+let pub = new Publisher('localhost', '50000', 'pub', 'pubsub');
 
-let event = new publish.Event(byteConverter.stringToByte('test'));
+let event = new Publisher.Event(byteConverter.stringToByte('test'));
 
 
 
